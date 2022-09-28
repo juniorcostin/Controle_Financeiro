@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_option_menu import option_menu
 from modules.entradas import filtra_entradas, cria_atualiza_remove_entrada
 from modules.saidas import filtra_saidas, cria_atualiza_remove_saida
+from modules.contas import filtra_contas, cria_atualiza_remove_conta
 
 st.set_page_config(layout="wide")
 
@@ -23,3 +24,10 @@ if opcao == "Saidas":
         filtra_saidas()
     with col2:
         cria_atualiza_remove_saida()
+
+if opcao == "Contas":
+    col1, col2 = st.columns(2)
+    with col1:
+        filtra_contas()
+    with col2:
+        cria_atualiza_remove_conta()

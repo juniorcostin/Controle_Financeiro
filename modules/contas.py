@@ -1,8 +1,13 @@
+# Imports utilizados são:
+# URI do banco de dados
+# Response da biblioteca Flask para trabalhar com os erros gerados ao consumir as APIs
+# Json para a transformação e leitura de parametros em formato JSON
 from main import db
 from flask import Response
 import json
 
-#CLASS para a criação da tabela no banco e transformação dos dados em JSON
+# Principal CLASS que faz a construção da tabela Contas no banco de dados
+# E também conta com uma função nomeada TO_JSON que transporma o payload das APIs em JSON para a inclusão correta no banco
 class Contas(db.Model):
     conta_id = db.Column(db.Integer, primary_key = True)
     conta_nome = db.Column(db.String(50), nullable=False)
@@ -18,77 +23,103 @@ class Contas(db.Model):
                 "usuario_id": self.usuario_id
                 }
 
-#Endpoint GET /contas para listar todos os contas
+####### Inicio das funções que são chamadas pelos Endpoints ########
+
+# Endpoint GET que retorna todas as contas dentro do banco
 def contas_seleciona_todos():
-    contas = Contas.query.all()
-    contas_json = [conta.to_json() for conta in contas]
-    return gera_response(200, "Contas", contas_json, "Contas Listadas Corretamente")
+    try:
+        contas = Contas.query.all()
+        contas_json = [conta.to_json() for conta in contas]
+        return gera_response(200, "Contas", contas_json, "Contas listadas com sucesso!")
+    except Exception as e:
+        return gera_response(400, "Contas", {}, f"Ouve um erro ao listar as contas! Mensagem: {e}")
 
-#Endpoint GET /contas/<id> para lista apenas um Contas
+# Endpoint GET que retorna apenas uma conta dentro do banco
+# Sendo filtrada pelo ID
 def contas_seleciona_um(id):
-    contas = Contas.query.filter_by(conta_id=id).first()
-    contas_json = contas.to_json()
-    return gera_response(200, "contas", contas_json, "conta Listada Corretamente")
+    try:
+        contas = Contas.query.filter_by(conta_id=id).first()
+        contas_json = contas.to_json()
+        return gera_response(200, "Contas", contas_json, "Conta listada com sucesso!")
+    except Exception as e:
+        return gera_response(400, "Contas", {}, f"Ouve um erro ao listar a conta! Mensagem: {e}")
 
-
-#Endpoint GET /contas/<id> para lista apenas um Contas
+# Endpoint GET que retorna uma conta dentro do banco
+# Sendo filtrada pelo NOME
 def contas_filtra_nome(nome):
-    contas = Contas.query.filter_by(conta_nome=nome).first()
-    contas_json = contas.to_json()
-    return gera_response(200, "contas", contas_json, "conta Listada Corretamente")
+    try:
+        contas = Contas.query.filter_by(conta_nome=nome).first()
+        contas_json = contas.to_json()
+        return gera_response(200, "Contas", contas_json, "Conta listada com sucesso!")
+    except Exception as e:
+        return gera_response(400, "Contas", {}, f"Ouve um erro ao listar a conta! Mensagem: {e}")
 
-
-#Endpoint POST /contas para incluir uma nova conta
+# Endpoint POST que realiza o cadastro de uma nova conta dentro do banco
+# Sendo necessário informar o body correto para que a construção seja realizada com sucesso
 def contas_criar(body):
     try:
         conta = Contas(
             conta_nome=body["conta_nome"],
             conta_limite=body["conta_limite"],
-            conta_valor=body["conta_valor"],
+            conta_valor=0,
             usuario_id=body["usuario_id"]
         )
+        #Validação dos campos
+        if conta.conta_nome == None or conta.conta_nome == "":
+            return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O nome da conta não foi informado")
+        if conta.conta_limite == None:
+            return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O limite da conta não foi informado")
+        if conta.usuario_id == None:
+            return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O ID do usuario da conta não foi informado")
+
         db.session.add(conta)
         db.session.commit()
-        return gera_response(201, "conta", conta.to_json(), "conta criado com sucesso")
+        return gera_response(201, "Contas", conta.to_json(), "Conta criado com sucesso!")
     except Exception as e:
-        print(e)
-        return gera_response(400, "conta", {}, f"Erro ao Cadastrar conta:{e}")
+        return gera_response(400, "Contas", {}, f"Erro ao Cadastrar conta! Mensagem:{e}")
 
-#Endpoint PUT /contas/<id> para atualizar uma conta
+# Endpoint PUT que atualiza uma conta criada dentro do banco
+# Sendo necessário informar um body com pelo menos uma opção
 def contas_atualiza(id, body):
     contas = Contas.query.filter_by(conta_id=id).first()
     try:
-        if "conta" in body:
-            contas.conta_nome = body["conta_nome"]
+        if "conta_nome" in body:
+            contas.conta_nome = body["conta_nome"]   
         if "conta_limite" in body:
-            contas.conta_limite = body["conta_limite"]
-        if "conta_valor" in body:
-            contas.conta_valor = body["conta_valor"]
-        if "conta_valor" in body:
+            contas.conta_limite = body["conta_limite"]   
+        if "usuario_id" in body:
             contas.usuario_id = body["usuario_id"]
+
+        if contas.conta_nome == None or contas.conta_nome == "":
+                return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O nome da conta não foi informado") 
+        if contas.conta_limite == None:
+                return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O limite da conta não foi informado") 
+        if contas.usuario_id == None:
+                return gera_response(400, "Contas", {}, f"Erro ao cadastrar conta! Mensagem: O ID do usuario da conta não foi informado")
 
         db.session.add(contas)
         db.session.commit()
-        return gera_response(200, "contas", contas.to_json(), "conta atualizado com sucesso")
+        return gera_response(200, "Contas", contas.to_json(), "Conta atualizada com sucesso!")
     except Exception as e:
-        return gera_response(400, "contas", {}, f"Erro ao Atualizar conta:{e}")
+        return gera_response(400, "Contas", {}, f"Erro ao atualizar conta! Mensagem:{e}")
 
-#Endpoint DELETE /contas/<id> para deletar uma conta
+# Endpoint DELETE que deleta uma conta criada dentro do banco
+# Sendo necessário informar apenas um ID para que ela seja deletada
 def contas_deleta(id):
-    contas = Contas.query.filter_by(dispositivo_id=id).first()
+    contas = Contas.query.filter_by(conta_id=id).first()
     try:
         db.session.delete(contas)
         db.session.commit()
-        return gera_response(200, "contas", contas.to_json(), "conta deletado com sucesso")
+        return gera_response(200, "Contas", contas.to_json(), "Conta deletada com sucesso!")
     except Exception as e:
-        return gera_response(400, "contas", {}, f"Erro ao deletar conta:{e}")
+        return gera_response(400, "Contas", {}, f"Erro ao deletar conta! Mensagem:{e}")
+
+######## Fim das funções chamadas pelos endpoints ###########
 
 ##################### Função para a geração de mensagens de erro/sucesso ########################
 def gera_response(status, nome_conteudo, conteudo, mensagem = False):
     body = {}
     body[nome_conteudo] = conteudo
-
     if(mensagem):
         body["mensagem"] = mensagem
-
     return Response(json.dumps(body, default=str), status= status, mimetype="application/json")
